@@ -31,7 +31,7 @@ use pocketmine\form\FormValidationException;
 use function gettype;
 use function is_bool;
 
-class ModalFormBase extends BaseStringContentForm{
+class ModalForm extends BaseStringContentForm{
 
 	public function __construct(
 		string $title = "",

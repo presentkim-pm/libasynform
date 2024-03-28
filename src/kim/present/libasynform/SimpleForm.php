@@ -31,7 +31,7 @@ use pocketmine\form\FormValidationException;
 use function gettype;
 use function is_int;
 
-class SimpleFormBase extends BaseStringContentForm{
+class SimpleForm extends BaseStringContentForm{
 	public const IMAGE_TYPE_PATH = 0;
 	public const IMAGE_TYPE_URL = 1;
 
