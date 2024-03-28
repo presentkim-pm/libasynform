@@ -1,0 +1,22 @@
+{
+  "name": "presentkim/libasynform",
+  "description": "Provides form classes for await-generator for PocketMine-MP",
+  "type": "library",
+  "license": "MIT",
+  "require": {
+    "pocketmine/pocketmine-mp": "^5.0.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "kim\\present\\libasynform\\": [
+        "src/kim/present/libasynform/"
+      ]
+    }
+  },
+  "extra": {
+    "virion": {
+      "spec": "3.0",
+      "namespace-root": "kim\\present\\libasynform"
+    }
+  }
+}
