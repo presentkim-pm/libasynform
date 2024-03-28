@@ -57,7 +57,7 @@ Await::f2c(function() use($player) : \Generator{
         ->addToggle("I want close menu", false, "close")
         ->addDropdown("I want ", ["close menu", "open menu"], 1, "select")
         ->addInput("I want ", "what do you want", "open menu", "want")
-        ->send($sender);
+        ->send($player);
 
     // if player close form, $recieve is null
     // else, below
