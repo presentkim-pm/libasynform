@@ -34,80 +34,81 @@ use SOFe\AwaitGenerator\Await;
 use function spl_object_id;
 
 abstract class BaseForm implements Form{
-	abstract public static function getType() : string;
 
-	abstract protected function processData(mixed $data) : mixed;
+    abstract public static function getType() : string;
 
-	/**
-	 * @var \Closure[] $promises
-	 * @phpstan-var array<int, array{\Closure, \Closure}>
-	 */
-	private array $promises = [];
+    abstract protected function processData(mixed $data) : mixed;
 
-	protected array $data;
+    /**
+     * @var \Closure[] $promises
+     * @phpstan-var array<int, array{\Closure, \Closure}>
+     */
+    private array $promises = [];
 
-	public function __construct(
-		string $title = ""
-	){
-		$this->data = [
-			"type" => static::getType(),
-			"title" => $title
-		];
-	}
+    protected array $data;
 
-	public function getTitle() : string{
-		return $this->data["title"];
-	}
+    public function __construct(
+        string $title = ""
+    ){
+        $this->data = [
+            "type" => static::getType(),
+            "title" => $title
+        ];
+    }
 
-	public function setTitle(string $title) : self{
-		$this->data["title"] = $title;
-		return $this;
-	}
+    public function getTitle() : string{
+        return $this->data["title"];
+    }
 
-	public function handleResponse(Player $player, $data) : void{
-		$id = spl_object_id($player);
-		if(!isset($this->promises[$id])){
-			throw new FormValidationException("Received response from player who didn't receive the form");
-		}
-		[$resolve, $reject] = $this->promises[$id];
-		unset($this->promises[$id]);
+    public function setTitle(string $title) : self{
+        $this->data["title"] = $title;
+        return $this;
+    }
 
-		if($data === null){
-			$resolve(null);
-			return;
-		}
+    public function handleResponse(Player $player, $data) : void{
+        $id = spl_object_id($player);
+        if(!isset($this->promises[$id])){
+            throw new FormValidationException("Received response from player who didn't receive the form");
+        }
+        [$resolve, $reject] = $this->promises[$id];
+        unset($this->promises[$id]);
 
-		try{
-			$data = $this->processData($data);
-		}catch(\Exception $e){
-			$reject($e);
-			return;
-		}
+        if($data === null){
+            $resolve(null);
+            return;
+        }
 
-		$resolve($data);
-	}
+        try{
+            $data = $this->processData($data);
+        }catch(\Exception $e){
+            $reject($e);
+            return;
+        }
 
-	public function send(Player $player) : \Generator{
-		$recieve = null;
-		yield from Await::promise(function($resolve, $reject) use (&$recieve, $player){
-			$id = spl_object_id($player);
-			if(isset($this->promises[$id])){
-				$reject(new FormValidationException("Player is already viewing a form"));
-				return;
-			}
+        $resolve($data);
+    }
 
-			$player->sendForm($this);
-			$this->promises[$id] = [
-				function(mixed $recive) use (&$recieve, $resolve){
-					$recieve = $recive;
-					$resolve();
-				}, $reject
-			];
-		});
-		return $recieve;
-	}
+    public function send(Player $player) : \Generator{
+        $recieve = null;
+        yield from Await::promise(function($resolve, $reject) use (&$recieve, $player){
+            $id = spl_object_id($player);
+            if(isset($this->promises[$id])){
+                $reject(new FormValidationException("Player is already viewing a form"));
+                return;
+            }
 
-	public function jsonSerialize() : array{
-		return $this->data;
-	}
+            $player->sendForm($this);
+            $this->promises[$id] = [
+                function(mixed $recive) use (&$recieve, $resolve){
+                    $recieve = $recive;
+                    $resolve();
+                }, $reject
+            ];
+        });
+        return $recieve;
+    }
+
+    public function jsonSerialize() : array{
+        return $this->data;
+    }
 }

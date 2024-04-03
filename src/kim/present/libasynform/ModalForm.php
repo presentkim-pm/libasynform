@@ -33,53 +33,53 @@ use function is_bool;
 
 class ModalForm extends BaseStringContentForm{
 
-	public function __construct(
-		string $title = "",
-		string $content = "",
-		string $button1 = "",
-		string $button2 = ""
-	){
-		parent::__construct($title, $content);
-		$this->data["button1"] = $button1;
-		$this->data["button2"] = $button2;
-	}
+    public function __construct(
+        string $title = "",
+        string $content = "",
+        string $button1 = "",
+        string $button2 = ""
+    ){
+        parent::__construct($title, $content);
+        $this->data["button1"] = $button1;
+        $this->data["button2"] = $button2;
+    }
 
-	public function getButton1() : string{
-		return $this->data["button1"];
-	}
+    public function getButton1() : string{
+        return $this->data["button1"];
+    }
 
-	public function setButton1(string $text) : self{
-		$this->data["button1"] = $text;
-		return $this;
-	}
+    public function setButton1(string $text) : self{
+        $this->data["button1"] = $text;
+        return $this;
+    }
 
-	public function getButton2() : string{
-		return $this->data["button2"];
-	}
+    public function getButton2() : string{
+        return $this->data["button2"];
+    }
 
-	public function setButton2(string $text) : self{
-		$this->data["button2"] = $text;
-		return $this;
-	}
+    public function setButton2(string $text) : self{
+        $this->data["button2"] = $text;
+        return $this;
+    }
 
-	protected function processData($data) : bool{
-		if(!is_bool($data)){
-			throw new FormValidationException("Expected a boolean response, got " . gettype($data));
-		}
+    protected function processData($data) : bool{
+        if(!is_bool($data)){
+            throw new FormValidationException("Expected a boolean response, got " . gettype($data));
+        }
 
-		return $data;
-	}
+        return $data;
+    }
 
-	public static function getType() : string{
-		return "modal";
-	}
+    public static function getType() : string{
+        return "modal";
+    }
 
-	public static function create(
-		string $title = "",
-		string $content = "",
-		string $button1 = "",
-		string $button2 = ""
-	) : self{
-		return new self($title, $content, $button1, $button2);
-	}
+    public static function create(
+        string $title = "",
+        string $content = "",
+        string $button1 = "",
+        string $button2 = ""
+    ) : self{
+        return new self($title, $content, $button1, $button2);
+    }
 }

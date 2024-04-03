@@ -32,43 +32,44 @@ use function gettype;
 use function is_int;
 
 class SimpleForm extends BaseStringContentForm{
-	public const IMAGE_TYPE_PATH = 0;
-	public const IMAGE_TYPE_URL = 1;
 
-	/**
-	 * @param string $text
-	 * @param int    $imageType
-	 * @param string $imagePath
-	 *
-	 * @return $this
-	 */
-	public function addButton(string $text, int $imageType = -1, string $imagePath = "") : self{
-		$content = ["text" => $text];
-		if($imageType !== -1){
-			$content["image"]["type"] = $imageType === 0 ? "path" : "url";
-			$content["image"]["data"] = $imagePath;
-		}
-		$this->data["buttons"][] = $content;
-		return $this;
-	}
+    public const IMAGE_TYPE_PATH = 0;
+    public const IMAGE_TYPE_URL = 1;
 
-	protected function processData(mixed $data) : int{
-		if(!is_int($data)){
-			throw new FormValidationException("Expected an integer response, got " . gettype($data));
-		}
+    /**
+     * @param string $text
+     * @param int    $imageType
+     * @param string $imagePath
+     *
+     * @return $this
+     */
+    public function addButton(string $text, int $imageType = -1, string $imagePath = "") : self{
+        $content = ["text" => $text];
+        if($imageType !== -1){
+            $content["image"]["type"] = $imageType === 0 ? "path" : "url";
+            $content["image"]["data"] = $imagePath;
+        }
+        $this->data["buttons"][] = $content;
+        return $this;
+    }
 
-		if(!isset($this->data["buttons"][$data])){
-			throw new FormValidationException("Button $data does not exist");
-		}
+    protected function processData(mixed $data) : int{
+        if(!is_int($data)){
+            throw new FormValidationException("Expected an integer response, got " . gettype($data));
+        }
 
-		return $data;
-	}
+        if(!isset($this->data["buttons"][$data])){
+            throw new FormValidationException("Button $data does not exist");
+        }
 
-	public static function getType() : string{
-		return "form";
-	}
+        return $data;
+    }
 
-	public static function create(string $title = "", string $content = "",) : self{
-		return new self($title, $content);
-	}
+    public static function getType() : string{
+        return "form";
+    }
+
+    public static function create(string $title = "", string $content = "") : self{
+        return new self($title, $content);
+    }
 }

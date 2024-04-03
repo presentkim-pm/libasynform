@@ -28,20 +28,20 @@ namespace kim\present\libasynform;
 
 abstract class BaseStringContentForm extends BaseForm{
 
-	public function __construct(
-		string $title = "",
-		string $content = ""
-	){
-		parent::__construct($title);
-		$this->data["content"] = $content;
-	}
+    public function __construct(
+        string $title = "",
+        string $content = ""
+    ){
+        parent::__construct($title);
+        $this->data["content"] = $content;
+    }
 
-	public function getContent() : string{
-		return $this->data["content"];
-	}
+    public function getContent() : string{
+        return $this->data["content"];
+    }
 
-	public function setContent(string $content) : self{
-		$this->data["content"] = $content;
-		return $this;
-	}
+    public function setContent(string $content) : self{
+        $this->data["content"] = $content;
+        return $this;
+    }
 }
