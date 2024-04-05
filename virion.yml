@@ -1,7 +1,7 @@
 ---
 name: libasynform
 antigen: kim\present\libasynform
-version: 1.0.0
+version: 1.1.0
 api: [ 5.0.0 ]
 author: PresentKim
 description: "Provides form classes for await-generator!"
