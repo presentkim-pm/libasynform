@@ -105,7 +105,7 @@ class CustomForm extends BaseForm{
         return $this;
     }
 
-    private function addContent(array $content) : void{
+    public function addContent(array $content) : void{
         $this->data["content"][] = $content;
     }
 
