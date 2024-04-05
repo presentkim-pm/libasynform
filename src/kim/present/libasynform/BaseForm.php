@@ -28,9 +28,11 @@ namespace kim\present\libasynform;
 
 use pocketmine\form\Form;
 use pocketmine\form\FormValidationException;
+use pocketmine\network\mcpe\protocol\ServerSettingsResponsePacket;
 use pocketmine\player\Player;
 use SOFe\AwaitGenerator\Await;
 
+use function json_encode;
 use function spl_object_id;
 
 abstract class BaseForm implements Form{
@@ -88,16 +90,30 @@ abstract class BaseForm implements Form{
         $resolve($data);
     }
 
-    public function send(Player $player) : \Generator{
+    public function send(Player $player, bool $isServerSetting = false) : \Generator{
         $recieve = null;
-        yield from Await::promise(function($resolve, $reject) use (&$recieve, $player){
+        yield from Await::promise(function($resolve, $reject) use (&$recieve, $player, $isServerSetting){
             $id = spl_object_id($player);
             if(isset($this->promises[$id])){
                 $reject(new FormValidationException("Player is already viewing a form"));
                 return;
             }
 
-            $player->sendForm($this);
+            if($isServerSetting){
+                \Closure::bind( //HACK: Closure bind hack to access inaccessible members
+                    closure: function(Player $player) : void{
+                        $id = $player->formIdCounter++;
+                        $pk = ServerSettingsResponsePacket::create($id, json_encode($this));
+                        if($player->getNetworkSession()->sendDataPacket($pk)){
+                            $player->forms[$id] = $this;
+                        }
+                    },
+                    newThis: $this,
+                    newScope: Player::class
+                )($player);
+            }else{
+                $player->sendForm($this);
+            }
             $this->promises[$id] = [
                 function(mixed $recive) use (&$recieve, $resolve){
                     $recieve = $recive;
