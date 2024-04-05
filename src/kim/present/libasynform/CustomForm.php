@@ -46,6 +46,11 @@ class CustomForm extends BaseForm{
         $this->data["content"] = [];
     }
 
+    public function setIcon(string $type, string $data) : self{
+        $this->data["icon"] = ["type" => $type, "data" => $data];
+        return $this;
+    }
+
     public function addLabel(string $text, ?string $label = null) : self{
         $this->addContent(["type" => "label", "text" => $text]);
         $this->labelMap[] = $label ?: count($this->labelMap);
