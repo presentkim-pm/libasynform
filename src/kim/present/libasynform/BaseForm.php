@@ -91,8 +91,7 @@ abstract class BaseForm implements Form{
     }
 
     public function send(Player $player, bool $isServerSetting = false) : \Generator{
-        $recieve = null;
-        yield from Await::promise(function($resolve, $reject) use (&$recieve, $player, $isServerSetting){
+        return yield from Await::promise(function($resolve, $reject) use ($player, $isServerSetting){
             $id = spl_object_id($player);
             if(isset($this->promises[$id])){
                 $reject(new FormValidationException("Player is already viewing a form"));
@@ -114,14 +113,8 @@ abstract class BaseForm implements Form{
             }else{
                 $player->sendForm($this);
             }
-            $this->promises[$id] = [
-                function(mixed $recive) use (&$recieve, $resolve){
-                    $recieve = $recive;
-                    $resolve();
-                }, $reject
-            ];
+            $this->promises[$id] = [$resolve, $reject];
         });
-        return $recieve;
     }
 
     public function jsonSerialize() : array{
