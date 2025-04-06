@@ -110,6 +110,16 @@ class CustomForm extends BaseForm{
         return $this;
     }
 
+    public function addDivider() : self{
+        $this->addContent(["type" => "divider", "text" => ""]);
+        return $this;
+    }
+
+    public function addHeader(string $text) : self{
+        $this->addContent(["type" => "header", "text" => $text]);
+        return $this;
+    }
+
     public function addContent(array $content, ?\Closure $validator = null, ?string $label = null) : void{
         $this->data["content"][] = $content;
         if($validator !== null){
