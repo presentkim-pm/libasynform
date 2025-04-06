@@ -51,12 +51,8 @@ class CustomForm extends BaseForm{
         return $this;
     }
 
-    public function addLabel(string $text, ?string $label = null) : self{
-        $this->addContent(
-            ["type" => "label", "text" => $text],
-            null,
-            $label
-        );
+    public function addLabel(string $text) : self{
+        $this->addContent(["type" => "label", "text" => $text]);
         return $this;
     }
 
@@ -114,7 +110,7 @@ class CustomForm extends BaseForm{
         return $this;
     }
 
-    public function addContent(array $content, ?\Closure $validator, ?string $label = null) : void{
+    public function addContent(array $content, ?\Closure $validator = null, ?string $label = null) : void{
         $this->data["content"][] = $content;
         if($validator !== null){
             $this->validators[] = $validator;
