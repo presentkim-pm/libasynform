@@ -52,7 +52,7 @@ class CustomForm extends BaseForm{
     }
 
     public function addLabel(string $text) : self{
-        $this->addContent(["type" => "label", "text" => $text]);
+        $this->addReadonlyContent(["type" => "label", "text" => $text]);
         return $this;
     }
 
@@ -111,20 +111,22 @@ class CustomForm extends BaseForm{
     }
 
     public function addDivider() : self{
-        $this->addContent(["type" => "divider", "text" => ""]);
+        $this->addReadonlyContent(["type" => "divider", "text" => ""]);
         return $this;
     }
 
     public function addHeader(string $text) : self{
-        $this->addContent(["type" => "header", "text" => $text]);
+        $this->addReadonlyContent(["type" => "header", "text" => $text]);
         return $this;
     }
 
-    public function addContent(array $content, ?\Closure $validator = null, ?string $label = null) : void{
+    public function addReadonlyContent(array $content) : void{
         $this->data["content"][] = $content;
-        if($validator !== null){
-            $this->validators[] = $validator;
-        }
+    }
+
+    public function addContent(array $content, \Closure $validator, ?string $label = null) : void{
+        $this->data["content"][] = $content;
+        $this->validators[] = $validator;
         $this->labelMap[] = $label ?: count($this->labelMap);
     }
 
