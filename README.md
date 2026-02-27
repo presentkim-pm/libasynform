@@ -52,16 +52,16 @@ use kim\present\libasynform\CustomForm;
 use SOFe\AwaitGenerator\Await;
 
 Await::f2c(function() use($player) : \Generator{
-    $recieve = yield from CustomForm::create("OpenMenu")
+    $receive = yield from CustomForm::create("OpenMenu")
         ->addToggle("I want open menu", true, "open")
         ->addToggle("I want close menu", false, "close")
         ->addDropdown("I want ", ["close menu", "open menu"], 1, "select")
         ->addInput("I want ", "what do you want", "open menu", "want")
         ->send($player);
 
-    // if player close form, $recieve is null
+    // if player close form, $receive is null
     // else, below
-    var_dump($recieve);
+    var_dump($receive);
     /*
         array(4) {
             ["open"]=>
