@@ -62,7 +62,7 @@ class ModalForm extends BaseStringContentForm{
         return $this;
     }
 
-    protected function processData($data) : bool{
+    protected function processData(mixed $data) : bool{
         if(!is_bool($data)){
             throw new FormValidationException("Expected a boolean response, got " . gettype($data));
         }

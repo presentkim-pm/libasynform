@@ -91,7 +91,7 @@ class CustomForm extends BaseForm{
         return $this;
     }
 
-    public function addDropdown(string $text, array $options, int $default = null, ?string $label = null) : self{
+    public function addDropdown(string $text, array $options, ?int $default = null, ?string $label = null) : self{
         $this->addContent(
             ["type" => "dropdown", "text" => $text, "options" => $options, "default" => $default],
             static fn($v) => is_int($v) && isset($options[$v]),
@@ -100,7 +100,7 @@ class CustomForm extends BaseForm{
         return $this;
     }
 
-    public function addInput(string $text, string $placeholder = "", string $default = null, ?string $label = null
+    public function addInput(string $text, string $placeholder = "", ?string $default = null, ?string $label = null
     ) : self{
         $this->addContent(
             ["type" => "input", "text" => $text, "placeholder" => $placeholder, "default" => $default],
@@ -130,7 +130,7 @@ class CustomForm extends BaseForm{
         $this->labelMap[] = $label ?: count($this->labelMap);
     }
 
-    public function processData($data) : array{
+    public function processData(mixed $data) : array{
         if(!is_array($data)){
             throw new FormValidationException("Expected an array response, got " . gettype($data));
         }
