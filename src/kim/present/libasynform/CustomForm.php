@@ -124,12 +124,34 @@ class CustomForm extends BaseForm{
         $this->data["content"][] = $content;
     }
 
+    /**
+     * Adds a content element that produces a value in the processed response.
+     *
+     * The response array returned by processData() will use $label as the key
+     * when it is not null. When $label is null, a 0-based integer index is used.
+     *
+     * @param array       $content   Raw form element definition
+     * @param \Closure    $validator Validator receiving the raw value
+     * @param string|null $label     Key name for the processed response array
+     */
     public function addContent(array $content, \Closure $validator, ?string $label = null) : void{
         $this->data["content"][] = $content;
         $this->validators[] = $validator;
         $this->labelMap[] = $label ?: count($this->labelMap);
     }
 
+    /**
+     * Processes raw form data into a validated associative array.
+     *
+     * The returned array is keyed by the labels passed to addContent(), or by
+     * 0-based integer indexes when labels are omitted.
+     *
+     * @param mixed $data Raw data from the client
+     *
+     * @return array<string|int, mixed>
+     *
+     * @throws FormValidationException
+     */
     public function processData(mixed $data) : array{
         if(!is_array($data)){
             throw new FormValidationException("Expected an array response, got " . gettype($data));
