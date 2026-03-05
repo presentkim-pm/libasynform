@@ -47,6 +47,7 @@ abstract class BaseForm implements Form{
      */
     private array $promises = [];
 
+    /** @var array<string, mixed> */
     protected array $data;
 
     public function __construct(
@@ -117,6 +118,7 @@ abstract class BaseForm implements Form{
         });
     }
 
+    /** @return array<string, mixed> */
     public function jsonSerialize() : array{
         return $this->data;
     }

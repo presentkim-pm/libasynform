@@ -38,7 +38,9 @@ use function is_string;
 
 class CustomForm extends BaseForm{
 
+    /** @var list<string|int> */
     private array $labelMap = [];
+    /** @var list<\Closure> */
     private array $validators = [];
 
     public function __construct(string $title = ""){
@@ -82,6 +84,7 @@ class CustomForm extends BaseForm{
         return $this;
     }
 
+    /** @param list<string> $steps */
     public function addStepSlider(string $text, array $steps, int $defaultIndex = 0, ?string $label = null) : self{
         $this->addContent(
             ["type" => "step_slider", "text" => $text, "steps" => $steps, "default" => $defaultIndex],
@@ -91,6 +94,7 @@ class CustomForm extends BaseForm{
         return $this;
     }
 
+    /** @param list<string> $options */
     public function addDropdown(string $text, array $options, ?int $default = null, ?string $label = null) : self{
         $this->addContent(
             ["type" => "dropdown", "text" => $text, "options" => $options, "default" => $default],
@@ -120,6 +124,7 @@ class CustomForm extends BaseForm{
         return $this;
     }
 
+    /** @param array<string, mixed> $content */
     public function addReadonlyContent(array $content) : void{
         $this->data["content"][] = $content;
     }
@@ -130,7 +135,7 @@ class CustomForm extends BaseForm{
      * The response array returned by processData() will use $label as the key
      * when it is not null. When $label is null, a 0-based integer index is used.
      *
-     * @param array       $content   Raw form element definition
+     * @param array<string, mixed> $content Raw form element definition
      * @param \Closure    $validator Validator receiving the raw value
      * @param string|null $label     Key name for the processed response array
      */
