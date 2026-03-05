@@ -142,7 +142,7 @@ class CustomForm extends BaseForm{
     public function addContent(array $content, \Closure $validator, ?string $label = null) : void{
         $this->data["content"][] = $content;
         $this->validators[] = $validator;
-        $this->labelMap[] = $label ?: count($this->labelMap);
+        $this->labelMap[] = $label !== null && $label !== '' ? $label : count($this->labelMap);
     }
 
     /**
