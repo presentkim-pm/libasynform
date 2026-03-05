@@ -101,10 +101,15 @@ abstract class BaseForm implements Form{
 
             if($isServerSetting){
                 \Closure::bind( //HACK: Closure bind hack to access inaccessible members
-                    closure: function(Player $player) : void{
+                    closure: function(Player $player) use ($reject) : void{
                         $id = $player->formIdCounter++;
-                        $pk = ServerSettingsResponsePacket::create($id, json_encode($this));
+                        $encoded = json_encode($this);
+                        if($encoded === false){
+                            $reject(new FormValidationException("Form encoding failed: " . json_last_error()));
+                        }
+                        $pk = ServerSettingsResponsePacket::create($id, $encoded);
                         if($player->getNetworkSession()->sendDataPacket($pk)){
+                            /** @phpstan-ignore-next-line */
                             $player->forms[$id] = $this;
                         }
                     },
