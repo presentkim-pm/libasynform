@@ -1,7 +1,8 @@
 <!-- PROJECT BADGES -->
 <div align="center">
 
-[![Poggit CI][poggit-ci-badge]][poggit-ci-url]
+[![Packagist][packagist-badge]][packagist-url]
+[![CI][ci-badge]][ci-url]
 [![Stars][stars-badge]][stars-url]
 [![License][license-badge]][license-url]
 
@@ -14,44 +15,66 @@
   <img src="https://raw.githubusercontent.com/presentkim-pm/libasynform/main/assets/icon.png" alt="Logo" width="80" height="80"/>
   <h3>libasynform</h3>
   <p align="center">
-    Provides form classes for await-generator!
+    Form classes for <a href="https://github.com/SOF3/await-generator">await-generator</a>: <code>yield from</code> the player's answer.
 
-[Contact to me][author-discord] · [Report a bug][issues-url] · [Request a feature][issues-url]
+[Packagist][packagist-url] · [Changelog](CHANGELOG.md) · [Report a bug][issues-url] · [Request a feature][issues-url]
 
   </p>
 </div>
 
-
-<!-- ABOUT THE PROJECT -->
-
-## About The Project
-
-:heavy_check_mark: Provides form classes for [await-generator](https://github.com/SOF3/await-generator)
-
-- `kim\present\libasynform\CustomForm`
-- `kim\present\libasynform\ModalForm`
-- `kim\present\libasynform\SimpleForm`
-
-##
+```php
+Await::f2c(function() use ($player) : \Generator{
+    $answer = yield from ModalForm::create("Reset?", "Really?", "Yes", "No")->send($player);
+    if($answer === true){ /* ... */ }
+});
+```
 
 -----
 
-## Usage
+## 🌟 Why libasynform?
 
-1. Use static method `::create()` to create form object
-2. Fill in the contents using the methods of each form class
-3. Use member method `->send(Player)` to send the form to the player
-   > Don't use `Player::sendForm()` method yourself
+Forms are callback based. A menu with a few steps turns into nested closures. With libasynform the whole flow is
+straight-line code.
 
-##
+- **Linear** : `$answer = yield from $form->send($player)`, no callbacks, no `Form` subclass per menu
+- **Typed answers** : `ModalForm` gives `bool`, `SimpleForm` the button index, `CustomForm` an array keyed by your labels
+- **Validated** : a response that does not fit the form rejects the generator with `FormValidationException`
+- **Safe** : sending to a disconnected player rejects instead of hanging, a form cannot be answered twice
+- **Tested** : on PHP 8.4 / 8.5 against the real `Player::sendForm()` / `Player::onFormSubmit()`
 
-example)
+-----
 
-````php
+## 📦 Installation
+
+```sh
+composer require presentkim/libasynform
+```
+
+This also installs [`sof3/await-generator`](https://packagist.org/packages/sof3/await-generator).
+
+| Requirement | Version                                                           |
+|-------------|-------------------------------------------------------------------|
+| Server      | [axolotl-pm/PocketMine-MP][axolotl-url] (fork of PocketMine-MP 5) |
+| PHP         | **8.4** or newer                                                  |
+
+> The Poggit virion for the original PocketMine-MP 5.44 and older is kept on the
+> [`legacy/pmmp-5.44`][legacy-url] branch (no longer maintained).
+
+-----
+
+## 🚀 Quick start
+
+1. Create the form with the static `::create()` and fill it with the builder methods
+2. `yield from $form->send($player)` inside an `Await::f2c()` generator
+3. Handle the result. It is `null` when the player closes the form
+
+> Don't call `Player::sendForm()` with these forms yourself, `send()` is what connects the answer to your generator.
+
+```php
 use kim\present\libasynform\CustomForm;
 use SOFe\AwaitGenerator\Await;
 
-Await::f2c(function() use($player) : \Generator{
+Await::f2c(function() use ($player) : \Generator{
     $receive = yield from CustomForm::create("OpenMenu")
         ->addToggle("I want open menu", true, "open")
         ->addToggle("I want close menu", false, "close")
@@ -59,80 +82,145 @@ Await::f2c(function() use($player) : \Generator{
         ->addInput("I want ", "what do you want", "open menu", "want")
         ->send($player);
 
-    // if player close form, $receive is null
-    // else, below
-    var_dump($receive);
-    /*
-        array(4) {
-            ["open"]=>
-            bool(true)
-            ["close"]=>
-            bool(false)
-            ["select"]=>
-            int(1)
-            ["want"]=>
-            string(9) "open menu"
-        }
-    */
+    // $receive is null when the player closed the form, otherwise
+    // ["open" => true, "close" => false, "select" => 1, "want" => "open menu"]
 });
-````
-
-##
+```
 
 -----
 
-## Installation
+## 📚 Examples
 
-See [Official Poggit Virion Documentation](https://github.com/poggit/support/blob/master/virion.md)
+<details>
+<summary><b>ModalForm : yes / no</b></summary>
 
-##
+```php
+Await::f2c(function() use ($player) : \Generator{
+    $yes = yield from ModalForm::create("Delete home", "Delete it for good?", "Delete", "Keep")->send($player);
+    if($yes === true){
+        // button1 was pressed
+    }elseif($yes === false){
+        // button2 was pressed
+    }else{
+        // the form was closed
+    }
+});
+```
+
+</details>
+
+<details>
+<summary><b>SimpleForm : a chain of menus</b></summary>
+
+```php
+Await::f2c(function() use ($player) : \Generator{
+    $choice = yield from SimpleForm::create("Main menu", "Where to?")
+        ->addButton("Spawn")
+        ->addButton("Shop", SimpleForm::IMAGE_TYPE_PATH, "textures/items/emerald")
+        ->send($player);
+
+    if($choice === 1){
+        $amount = yield from CustomForm::create("Shop")
+            ->addSlider("Amount", 1, 64, 1, 1, "amount")
+            ->send($player);
+        // $amount["amount"] ...
+    }
+});
+```
+
+</details>
+
+<details>
+<summary><b>Labels, headers and dividers</b></summary>
+
+Read-only elements (`addLabel()`, `addHeader()`, `addDivider()`) are not part of the answer.
+Value elements are keyed by the label you give them, or by their 0-based index among the value elements.
+
+```php
+$receive = yield from CustomForm::create("Profile")
+    ->addHeader("Account")
+    ->addInput("Name", "Steve", null, "name")
+    ->addDivider()
+    ->addToggle("Public", true)      // key 1
+    ->send($player);
+```
+
+</details>
+
+<details>
+<summary><b>Server settings page</b></summary>
+
+`send($player, true)` sends the form as a server settings response (the page in the client's settings menu)
+instead of a normal form. Answer the client's `ServerSettingsRequestPacket` with it.
+
+</details>
+
+<details>
+<summary><b>Handling errors and quitting players</b></summary>
+
+```php
+try{
+    $answer = yield from $form->send($player);
+}catch(FormValidationException $e){
+    // invalid response, form already open for this player, or the form could not be sent
+}
+```
+
+The server does not tell a form when its player quits, so a generator waiting for a player who disconnects is never
+resumed (it is released once the player object is freed). Race the form against your own quit signal with
+`Await::race()` if you need to clean up.
+
+</details>
 
 -----
 
-## How to use?
+## 📖 API reference
 
-See [Main Document](https://github.com/presentkim-pm/libasynform/blob/main/docs/README.md)
-
-##
+| Method                                                                                          | Description                                                        |
+|-------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| `BaseForm::send(Player $player, bool $isServerSetting = false) : Generator`                     | Send the form, resolves with the processed answer or `null`        |
+| `ModalForm::create(title, content, button1, button2)`                                           | Yes / no form, answer is `bool`                                    |
+| `SimpleForm::create(title, content)` / `addButton(text, ?imageType, imagePath)`                 | Button list, answer is the button index                            |
+| `CustomForm::create(title)`                                                                     | Form with elements, answer is an array keyed by label              |
+| `CustomForm::addToggle` `addSlider` `addStepSlider` `addDropdown` `addInput`                    | Value elements, the last argument is the label of the answer key   |
+| `CustomForm::addLabel` `addHeader` `addDivider`                                                 | Read-only elements, not part of the answer                         |
+| `CustomForm::addContent(array $content, Closure $validator, ?string $label)`                    | Custom value element with your own validator                       |
+| `CustomForm::setIcon(string $type, string $data)`                                               | Icon shown next to the title                                       |
 
 -----
 
-## License
+## 🧪 Development
 
-Distributed under the **MIT**. See [LICENSE][license-url] for more information
-
-##
+```sh
+composer install --ignore-platform-req='ext-*'
+composer test
+```
 
 -----
 
-[author-discord]: https://discordapp.com/users/345772340279508993
+## 📄 License
 
-[poggit-ci-badge]: https://poggit.pmmp.io/ci.shield/presentkim-pm/libasynform/libasynform?style=for-the-badge
+Distributed under the **MIT** License. See [LICENSE][license-url] for more information.
 
-[poggit-version-badge]: https://poggit.pmmp.io/shield.api/libasynform?style=for-the-badge
 
-[poggit-downloads-badge]: https://poggit.pmmp.io/shield.dl.total/libasynform?style=for-the-badge
+[packagist-badge]: https://img.shields.io/packagist/v/presentkim/libasynform.svg?style=for-the-badge
 
-[version-badge]: https://img.shields.io/github/v/release/presentkim-pm/libasynform?display_name=tag&style=for-the-badge&label=VERSION
+[packagist-url]: https://packagist.org/packages/presentkim/libasynform
 
-[release-badge]: https://img.shields.io/github/downloads/presentkim-pm/libasynform/total?style=for-the-badge&label=GITHUB%20
+[ci-badge]: https://img.shields.io/github/actions/workflow/status/presentkim-pm/libasynform/ci.yml?branch=main&style=for-the-badge
+
+[ci-url]: https://github.com/presentkim-pm/libasynform/actions/workflows/ci.yml
 
 [stars-badge]: https://img.shields.io/github/stars/presentkim-pm/libasynform.svg?style=for-the-badge
 
 [license-badge]: https://img.shields.io/github/license/presentkim-pm/libasynform.svg?style=for-the-badge
 
-[poggit-ci-url]: https://poggit.pmmp.io/ci/presentkim-pm/libasynform/libasynform
-
-[poggit-release-url]: https://poggit.pmmp.io/p/libasynform
-
 [stars-url]: https://github.com/presentkim-pm/libasynform/stargazers
-
-[releases-url]: https://github.com/presentkim-pm/libasynform/releases
 
 [issues-url]: https://github.com/presentkim-pm/libasynform/issues
 
 [license-url]: https://github.com/presentkim-pm/libasynform/blob/main/LICENSE
 
-[project-icon]: https://raw.githubusercontent.com/presentkim-pm/libasynform/main/assets/icon.png
+[legacy-url]: https://github.com/presentkim-pm/libasynform/tree/legacy/pmmp-5.44
 
-[project-preview]: https://raw.githubusercontent.com/presentkim-pm/libasynform/main/assets/preview.gif
+[axolotl-url]: https://github.com/axolotl-pm/PocketMine-MP
