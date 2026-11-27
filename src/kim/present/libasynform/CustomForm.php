@@ -28,7 +28,9 @@ namespace kim\present\libasynform;
 
 use pocketmine\form\FormValidationException;
 
+use function array_key_exists;
 use function count;
+use function array_keys;
 use function gettype;
 use function is_array;
 use function is_bool;
@@ -38,10 +40,16 @@ use function is_string;
 
 class CustomForm extends BaseForm{
 
-    /** @var list<string|int> */
-    private array $labelMap = [];
-    /** @var list<\Closure> */
-    private array $validators = [];
+    /**
+     * One entry per element of the form, in display order.
+     * Value elements carry their response key and validator, read-only elements (label, header, divider) carry null.
+     *
+     * @var list<array{string|int, \Closure}|null>
+     */
+    private array $entries = [];
+    /** @var array<string|int, true> */
+    private array $usedLabels = [];
+    private int $valueCount = 0;
 
     public function __construct(string $title = ""){
         parent::__construct($title);
@@ -67,13 +75,23 @@ class CustomForm extends BaseForm{
         return $this;
     }
 
-    public function addSlider(string $text, int $min, int $max, int $step = -1, int $default = -1, ?string $label = null
+    /**
+     * @param int|null $step    Step size, null (default) lets the client decide
+     * @param int|null $default Default value, null (default) lets the client decide
+     */
+    public function addSlider(
+        string $text,
+        int $min,
+        int $max,
+        ?int $step = null,
+        ?int $default = null,
+        ?string $label = null
     ) : self{
         $content = ["type" => "slider", "text" => $text, "min" => $min, "max" => $max];
-        if($step !== -1){
+        if($step !== null){
             $content["step"] = $step;
         }
-        if($default !== -1){
+        if($default !== null){
             $content["default"] = $default;
         }
         $this->addContent(
@@ -94,10 +112,17 @@ class CustomForm extends BaseForm{
         return $this;
     }
 
-    /** @param list<string> $options */
+    /**
+     * @param list<string> $options
+     * @param int|null     $default Index of the preselected option, null (default) lets the client decide
+     */
     public function addDropdown(string $text, array $options, ?int $default = null, ?string $label = null) : self{
+        $content = ["type" => "dropdown", "text" => $text, "options" => $options];
+        if($default !== null){
+            $content["default"] = $default;
+        }
         $this->addContent(
-            ["type" => "dropdown", "text" => $text, "options" => $options, "default" => $default],
+            $content,
             static fn($v) => is_int($v) && isset($options[$v]),
             $label
         );
@@ -106,8 +131,12 @@ class CustomForm extends BaseForm{
 
     public function addInput(string $text, string $placeholder = "", ?string $default = null, ?string $label = null
     ) : self{
+        $content = ["type" => "input", "text" => $text, "placeholder" => $placeholder];
+        if($default !== null){
+            $content["default"] = $default;
+        }
         $this->addContent(
-            ["type" => "input", "text" => $text, "placeholder" => $placeholder, "default" => $default],
+            $content,
             static fn($v) => is_string($v),
             $label
         );
@@ -124,25 +153,46 @@ class CustomForm extends BaseForm{
         return $this;
     }
 
-    /** @param array<string, mixed> $content */
+    /**
+     * Adds a read-only element (label, header, divider ...).
+     * The client still reports a value for it, which is ignored and left out of the processed response.
+     *
+     * @param array<string, mixed> $content
+     */
     public function addReadonlyContent(array $content) : void{
         $this->data["content"][] = $content;
+        $this->entries[] = null;
     }
 
     /**
      * Adds a content element that produces a value in the processed response.
      *
      * The response array returned by processData() will use $label as the key
-     * when it is not null. When $label is null, a 0-based integer index is used.
+     * when it is not null. When $label is null, a 0-based integer index (counting only value elements,
+     * not labels, headers and dividers) is used.
      *
-     * @param array<string, mixed> $content Raw form element definition
-     * @param \Closure    $validator Validator receiving the raw value
-     * @param string|null $label     Key name for the processed response array
+     * @param array<string, mixed> $content   Raw form element definition
+     * @param \Closure            $validator Validator receiving the raw value
+     * @param string|null         $label     Key name for the processed response array
+     *
+     * @throws \InvalidArgumentException if the label is already used by another element
      */
     public function addContent(array $content, \Closure $validator, ?string $label = null) : void{
+        $key = $label !== null && $label !== '' ? $label : $this->valueCount;
+        //Numeric string labels become integer array keys, so normalise before comparing
+        $normalized = is_string($key) ? ($this->normalizeKey($key)) : $key;
+        if(array_key_exists($normalized, $this->usedLabels)){
+            throw new \InvalidArgumentException("Label '$key' is already used by another element");
+        }
+        $this->usedLabels[$normalized] = true;
+        $this->valueCount++;
+
         $this->data["content"][] = $content;
-        $this->validators[] = $validator;
-        $this->labelMap[] = $label !== null && $label !== '' ? $label : count($this->labelMap);
+        $this->entries[] = [$normalized, $validator];
+    }
+
+    private function normalizeKey(string $key) : string|int{
+        return array_keys([$key => 0])[0];
     }
 
     /**
@@ -162,21 +212,26 @@ class CustomForm extends BaseForm{
             throw new FormValidationException("Expected an array response, got " . gettype($data));
         }
 
-        if(count($data) !== count($this->validators)){
+        //The client reports every element, read-only ones included
+        if(count($data) !== count($this->entries)){
             throw new FormValidationException(
-                "Expected an array response with the size " . count($this->validators) . ", got " . count($data)
+                "Expected an array response with the size " . count($this->entries) . ", got " . count($data)
             );
         }
         $new = [];
         foreach($data as $i => $v){
-            $validator = $this->validators[$i] ?? null;
-            if($validator === null){
+            if(!is_int($i) || !array_key_exists($i, $this->entries)){
                 throw new FormValidationException("Invalid element " . $i);
             }
-            if(!$validator($v)){
-                throw new FormValidationException("Invalid type given for element " . $this->labelMap[$i]);
+            $entry = $this->entries[$i];
+            if($entry === null){
+                continue;
             }
-            $new[$this->labelMap[$i]] = $v;
+            [$key, $validator] = $entry;
+            if(!$validator($v)){
+                throw new FormValidationException("Invalid type given for element " . $key);
+            }
+            $new[$key] = $v;
         }
         return $new;
     }

@@ -36,18 +36,31 @@ class SimpleForm extends BaseStringContentForm{
     public const IMAGE_TYPE_PATH = 0;
     public const IMAGE_TYPE_URL = 1;
 
+    public function __construct(string $title = "", string $content = ""){
+        parent::__construct($title, $content);
+        //A form without a "buttons" key is rejected by the client, so always send the list
+        $this->data["buttons"] = [];
+    }
+
     /**
-     * @param string $text
-     * @param int    $imageType
-     * @param string $imagePath
+     * @param string   $text      Button text
+     * @param int|null $imageType {@see IMAGE_TYPE_PATH} or {@see IMAGE_TYPE_URL}, or null (default) for no image
+     * @param string   $imagePath Texture path or URL, depending on $imageType
      *
      * @return $this
+     * @throws \InvalidArgumentException if $imageType is not a known image type
      */
-    public function addButton(string $text, int $imageType = -1, string $imagePath = "") : self{
+    public function addButton(string $text, ?int $imageType = null, string $imagePath = "") : self{
         $content = ["text" => $text];
-        if($imageType !== -1){
-            $content["image"]["type"] = $imageType === 0 ? "path" : "url";
-            $content["image"]["data"] = $imagePath;
+        if($imageType !== null){
+            $content["image"] = [
+                "type" => match ($imageType) {
+                    self::IMAGE_TYPE_PATH => "path",
+                    self::IMAGE_TYPE_URL => "url",
+                    default => throw new \InvalidArgumentException("Unknown image type $imageType")
+                },
+                "data" => $imagePath
+            ];
         }
         $this->data["buttons"][] = $content;
         return $this;
